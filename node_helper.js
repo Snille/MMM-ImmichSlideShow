@@ -138,8 +138,13 @@ module.exports = NodeHelper.create({
       return;
     }
     Log.debug(LOG_PREFIX + 'GOT new active config', this.config.activeImmichConfig);
-    await immichApi.init(config.activeImmichConfig, this.expressApp, isActiveConfigChange);
-   
+    try {
+      await immichApi.init(config.activeImmichConfig, this.expressApp, isActiveConfigChange);
+    } catch (e) {
+      Log.warn(LOG_PREFIX + 'Immich is not available or failed to get version.  Returninging without the image list');
+      return;
+    }
+    
     // create an empty main image list
     this.imageList = [];
 
