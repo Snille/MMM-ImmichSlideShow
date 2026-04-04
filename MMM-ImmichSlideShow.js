@@ -11,7 +11,7 @@
  * Module MMM-Slideshow By Darick Carpenter
  * MIT Licensed.
  */
-const Log = console;
+// const Log = console;
 const LOG_PREFIX = 'MMM-ImmichSlideShow :: module :: ';
 const MODE_MEMORY = 'memory';
 const MODE_ALBUM = 'album';
@@ -125,7 +125,12 @@ Module.register('MMM-ImmichSlideShow', {
     ],
     transitionTimingFunction: 'cubic-bezier(.17,.67,.35,.96)',
     animations: ['slide', 'zoomOut', 'zoomIn'],
-    showBlurredImageForBlackBars: false
+    showBlurredImageForBlackBars: false,
+    // Width and height of the module when used in a non-fullscreen position.
+    // Required for any position other than fullscreen_above / fullscreen_below.
+    // Accepts any valid CSS value, e.g. '400px', '50vw', '30vh'.
+    width: null,
+    height: null
   },
 
   // load function
@@ -298,11 +303,19 @@ Module.register('MMM-ImmichSlideShow', {
     this.config.activeImmichConfig = this.config.immichConfigs[this.config.activeImmichConfigIndex < this.config.immichConfigs.length ? this.config.activeImmichConfigIndex : 0];
 
     
-    if (this.data.position.indexOf('fullscreen') === -1) {
-      // Turn off transitions
-      this.config.transitionImages = false;
+    if (this.data.position.indexOf('fullscreen') !== -1 && (this.config.width || this.config.height)) {
+      Log.warn(
+          LOG_PREFIX + 'Display is set to fullscreen and width/height provided.  Ignoring with/height...'
+        );
+      this.config.width = this.config.height = null;
+    } else if (this.data.position.indexOf('fullscreen') === -1 && (!this.config.width || !this.config.height)) {
+      Log.warn(
+          LOG_PREFIX + 'Display is not fullscreen and width/height not provided.  Using defaults...'
+        );
+      this.config.width = this.config.width || '480px';
+      this.config.height = this.config.height || '320px';
     }
-    
+
     if (!this.config.transitionImages) {
       this.config.transitionSpeed = '0';
     }
@@ -999,6 +1012,19 @@ Module.register('MMM-ImmichSlideShow', {
   getDom: function () {
     let wrapper = document.createElement('div');
     wrapper.className = 'immich-container';
+
+    const isFullscreen = this.data.position.indexOf('fullscreen') !== -1;
+    if (!isFullscreen) {
+      // In non-fullscreen positions the container must become the positioning
+      // context for its absolutely-positioned children.  In fullscreen mode
+      // MM2's own region already provides that context, so we leave it
+      // completely untouched to preserve the original behaviour.
+      wrapper.style.position = 'relative';
+      wrapper.style.overflow = 'hidden';
+      if (this.config.width)  wrapper.style.width  = this.config.width;
+      if (this.config.height) wrapper.style.height = this.config.height;
+    }
+
     this.imagesDiv = document.createElement('div');
     this.imagesDiv.className = 'images';
     if (this.config.backgroundSize == 'contain' && this.config.showBlurredImageForBlackBars) {

@@ -311,6 +311,23 @@ The following properties can be configured:
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
+		<tr>
+			<td><code>width</code></td>
+			<td>The width of the module when possition is not fullscreen.
+				<br><b>Example:</b> <code>50vw</code>
+				<br><b>Default value:</b> <code>480px</code>
+				<br>This value is <b>OPTIONAL</b>
+			</td>
+		</tr>
+		<tr>
+			<td><code>height</code></td>
+			<td>The height of the module when possition is not fullscreen.
+				<br><b>Example:</b> <code>50vh</code>
+				<br><b>Default value:</b> <code>320px</code>
+				<br>This value is <b>OPTIONAL</b>
+			</td>
+			</td>
+		</tr>
     </tbody>
 </table>
 

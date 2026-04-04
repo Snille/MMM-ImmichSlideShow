@@ -13,8 +13,8 @@
  */
 
 // call in the required classes
-const Log = console;
-// const Log = require('logger');
+// const Log = console;
+const Log = require('logger');
 const NodeHelper = require('node_helper');
 const immichApi = require('./immichApi.js');
 const LOG_PREFIX = 'MMM-ImmichSlideShow :: node_helper :: ';
