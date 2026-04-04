@@ -16,7 +16,6 @@
 // const Log = console;
 const Log = require('logger');
 const NodeHelper = require('node_helper');
-const axios = require('axios');
 const immichApi = require('./immichApi.js');
 const LOG_PREFIX = 'MMM-ImmichSlideShow :: node_helper :: ';
 
@@ -50,32 +49,32 @@ module.exports = NodeHelper.create({
 
   // sort by filename attribute
   sortByFilename: function (a, b) {
-    aL = a.originalFileName.toLowerCase();
-    bL = b.originalFileName.toLowerCase();
+    const aL = a.originalFileName.toLowerCase();
+    const bL = b.originalFileName.toLowerCase();
     if (aL > bL) return 1;
     else return -1;
   },
 
   // sort by created attribute
   sortByCreated: function (a, b) {
-    aL = a.fileCreatedAt;
-    bL = b.fileCreatedAt;
+    const aL = a.fileCreatedAt;
+    const bL = b.fileCreatedAt;
     if (aL > bL) return 1;
     else return -1;
   },
 
   // sort by created attribute
   sortByModified: function (a, b) {
-    aL = a.fileModifiedAt;
-    bL = b.fileModifiedAt;
+    const aL = a.fileModifiedAt;
+    const bL = b.fileModifiedAt;
     if (aL > bL) return 1;
     else return -1;
   },
 
   // sort by created attribute
   sortByTaken: function (a, b) {
-    aL = a.exifInfo?.dateTimeOriginal || a.fileCreatedAt;
-    bL = b.exifInfo?.dateTimeOriginal || b.fileCreatedAt;
+    const aL = a.exifInfo?.dateTimeOriginal || a.fileCreatedAt;
+    const bL = b.exifInfo?.dateTimeOriginal || b.fileCreatedAt;
     if (aL > bL) return 1;
     else return -1;
   },
@@ -152,8 +151,8 @@ module.exports = NodeHelper.create({
     let albumIds = config.activeImmichConfig.albumId;
 
     // Get today's date at midnight
-    let today = (new Date());
-    this.pictureDate = new Date(today.getTime());
+    const today = (new Date());
+    this.pictureDate = today.setHours(0,0,0,0);
 
     // First check to see what mode we are operating in
     if (config.activeImmichConfig.mode === 'album') {
@@ -443,7 +442,7 @@ module.exports = NodeHelper.create({
   },
 
   changeActiveConfig: async function(config) {
-    this.lastImageLoaded = true;
+    this.lastImageLoaded = null;
     await this.gatherImageList(config, true);
     this.displayImage();
   }

@@ -1,5 +1,5 @@
-// const Log = console;
-const Log = require('logger');
+const Log = console;
+// const Log = require('logger');
 const axios = require('axios');
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
@@ -70,7 +70,7 @@ const immichApi = {
               }
             });
 
-            // ENABLE DEBUGGING FOR AXIS
+            // ENABLE DEBUGGING FOR AXIOS
             // this.http.interceptors.request.use(request => {
             //   Log.log('Starting Request', request.headers, '\n baseUrl: ', request.baseURL, '\n method: ', request.method, '\n URL: ', request.url, '\n params: ', request.params);
             //   return request;
@@ -121,25 +121,43 @@ const immichApi = {
                 throw('Failed to get Immich version.  Cannot proceed.');
             }
 
-            // Now setup our proxy service
-            expressApp.use(IMMICH_PROXY_URL, createProxyMiddleware({
-                target: config.url,
-                changeOrigin: true,
-                // logger: Log,
-                proxyTimeout: config.timeout,
-                headers: {
-                    'x-api-key': config.apiKey,
-                    'accept': 'application/octet-stream'
-                },
-                pathRewrite: (path, req) => {
-                    const pathArray = path.split('/');
-                    const imageId = pathArray[pathArray.length-1];
-                    return this.apiBaseUrl + this.apiUrls[this.apiLevel]['assetDownload'].replace('{id}',imageId);
-                }
-            }));
+            // Now setup our proxy service if not already registered
+            const proxyRegistered = expressApp.router.stack.some(layer => {
+                                        return layer.path && IMMICH_PROXY_URL.indexOf(layer.path) === 0;
+                                    });
+            // Only register the proxy if not already registered
+            if (!proxyRegistered) {
+                Log.debug('Registering proxy for immich');
+                const self = this;
+                expressApp.use(IMMICH_PROXY_URL, createProxyMiddleware({
+                    changeOrigin: true,
+                    // Set the target dynamically based on current config
+                    router: () => self._proxyTarget,
+                    // logger: Log,
+                    proxyTimeout: config.timeout,
+                    headers: {
+                        'accept': 'application/octet-stream'
+                    },
+                    on: {
+                        // Set this dynamically to make sure always using the latest.
+                        proxyReq: (pReq) => {
+                            pReq.setHeader('x-api-key', self._proxyAPiKey);
+                        }
+                    },
+                    pathRewrite: (path, req) => {
+                        const pathArray = path.split('/');
+                        const imageId = pathArray[pathArray.length-1];
+                        return this.apiBaseUrl + this.apiUrls[this.apiLevel]['assetDownload'].replace('{id}',imageId);
+                    }
+                }));
+            }
 
             Log.debug(LOG_PREFIX + 'Server Version is', this.apiLevel, JSON.stringify(serverVersion));
         }
+
+        // Make sure the proxy target and key are updated each time
+        this._proxyTarget = config.url;
+        this._proxyAPiKey = config.apiKey;
     },
 
     getAlbumNameToIdMap: async function () {
