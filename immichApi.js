@@ -35,7 +35,8 @@ const immichApi = {
             assetInfo: '/assets/{id}',
             assetDownload: '/assets/{id}/thumbnail?size=preview',
             serverInfoUrl: '/server/version',
-            search: '/search/smart'
+            search: '/search/smart',
+            metadataSearch: '/search/metadata'
         },
         v1_133: {
             previousVersion: 'v1_118',
@@ -46,6 +47,7 @@ const immichApi = {
             assetDownload: '/assets/{id}/thumbnail?size=preview',
             serverInfoUrl: '/server/version',
             search: '/search/smart',
+            metadataSearch: '/search/metadata',
             randomSearch: '/search/random'
         }
     },
@@ -53,6 +55,7 @@ const immichApi = {
     apiLevel: 'v1_133',
     apiBaseUrl: '/api',
     http: null,
+    proxyRegistered: false,
 
     init: async function(config, expressApp, force) {
 
@@ -121,12 +124,9 @@ const immichApi = {
                 throw('Failed to get Immich version.  Cannot proceed.');
             }
 
-            // Now setup our proxy service if not already registered
-            const proxyRegistered = expressApp.router.stack.some(layer => {
-                                        return layer.path && IMMICH_PROXY_URL.indexOf(layer.path) === 0;
-                                    });
-            // Only register the proxy if not already registered
-            if (!proxyRegistered) {
+            // Register the proxy once per process. Inspecting expressApp.router.stack is
+            // brittle on newer Express/MagicMirror versions and can produce false positives.
+            if (!this.proxyRegistered) {
                 Log.debug('Registering proxy for immich');
                 const self = this;
                 expressApp.use(IMMICH_PROXY_URL, createProxyMiddleware({
@@ -150,6 +150,7 @@ const immichApi = {
                         return this.apiBaseUrl + this.apiUrls[this.apiLevel]['assetDownload'].replace('{id}',imageId);
                     }
                 }));
+                this.proxyRegistered = true;
             }
 
             Log.debug(LOG_PREFIX + 'Server Version is', this.apiLevel, JSON.stringify(serverVersion));
@@ -199,6 +200,13 @@ const immichApi = {
             const response = await this.http.get(this.apiUrls[this.apiLevel]['albumInfo'].replace('{id}',albumId), {responseType: 'json'});
             if (response.status === 200) {
                 imageList = [...response.data.assets];
+                if (imageList.length === 0 && response.data.assetCount > 0 && this.apiUrls[this.apiLevel]['metadataSearch']) {
+                    Log.debug(
+                        LOG_PREFIX +
+                        `Album ${albumId} returned no embedded assets; falling back to metadata search for ${response.data.assetCount} item(s)`
+                    );
+                    imageList = await this.getAlbumAssetsViaMetadataSearch(albumId);
+                }
                 if (response.data.albumName) {
                     Log.debug(LOG_PREFIX + `Retrieved ${imageList.length} images for album ${response.data.albumName}`);
                     imageList.forEach(image =>
@@ -210,6 +218,42 @@ const immichApi = {
             }
         } catch (e) {
             Log.error(LOG_PREFIX + 'Oops!  Exception while fetching pictures from album ', e.message);
+        }
+
+        return imageList;
+    },
+
+    getAlbumAssetsViaMetadataSearch: async function (albumId) {
+        let imageList = [];
+        let page = 1;
+        let nextPage = 1;
+        const size = 500;
+
+        while (nextPage) {
+            try {
+                const response = await this.http.post(
+                    this.apiUrls[this.apiLevel]['metadataSearch'],
+                    {
+                        albumIds: [albumId],
+                        page: page,
+                        size: size
+                    },
+                    {responseType: 'json'}
+                );
+
+                if (response.status !== 200) {
+                    Log.error(LOG_PREFIX + 'unexpected response from Immich while metadata-searching album assets', response.status, response.statusText);
+                    break;
+                }
+
+                const assets = response.data?.assets?.items || [];
+                imageList = imageList.concat(assets);
+                nextPage = response.data?.assets?.nextPage ? Number(response.data.assets.nextPage) : null;
+                page = nextPage;
+            } catch (e) {
+                Log.error(LOG_PREFIX + 'Oops!  Exception while metadata-searching album assets', e.message);
+                break;
+            }
         }
 
         return imageList;
