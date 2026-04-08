@@ -13,11 +13,11 @@ This module requires no special dependencies besides a working <a target="immich
 
 ## Operation
 
-This module will require the URL of your Immich instance and your API Key at a minimum. The module will display images from the past 7 days (default value) over the years. In either chronological, alphabetical or random order. Once all the images have been shown, it will loop back and start again after refreshing the images in case the date has changed.
+This module will require the URL of your Immich instance and your API Key at a minimum. By default, in `memory` mode, the module will display images from the past 7 days (default value) over the years. Other modes can display images from albums, search results, random selections, or anniversary date ranges. Once all the images have been shown, it will loop back and start again after refreshing the image list when needed.
 
 Extra configurations include setting the amount of time an image is shown for, selecting which file extensions are valid, the transition speed from one image to another, the background sizing, and whether or not to animate the transition from one to the other.
 
-**Note:**  This module attempts to sync all of its clients (i.e. display the same image on all clients), so the images are pushed from the server to the client.  Version 1.0.0+ ensures that if the server is restarted, the clients connect back.
+**Note:**  This module attempts to sync all of its clients (i.e. display the same image on all clients). Image changes are coordinated by the server and the client loads images through the module's internal proxy. Version 1.0.0+ ensures that if the server is restarted, the clients connect back.
 
 ## Using the module
 
@@ -84,11 +84,6 @@ The following notifications can be used:
 	<thead>
 	<tbody>
 		<tr>
-			<td><code>IMMICHSLIDESHOW_UPDATE_IMAGE_LIST</code></td>
-			<td>Reload images list and start slideshow from first image. Works best when sorted by modified date descending.<br>
-			</td>
-		</tr>
-		<tr>
 			<td><code>IMMICHSLIDESHOW_NEXT</code></td>
 			<td>Change to the next image, restart the timer for image changes only if already running<br>
 			</td>
@@ -124,11 +119,6 @@ The following notifications can be used:
 			</td>
 		</tr>
 		<tr>
-			<td><code>IMMICHSLIDESHOW_PLAY</code></td>
-			<td>Change to the next image and start the timer for image changes<br>
-			</td>
-		</tr>
-		<tr>
 			<td><code>IMMICHSLIDESHOW_SET_ACTIVE_CONFIG</code></td>
 			<td>Change the active configuration if you have more than one configuration.  This API expects a post and the index of the active configuration as post body.  See Example below<br>
 			</td>
@@ -139,7 +129,7 @@ The following notifications can be used:
 This requires [MMM-Remote-Control](https://github.com/Jopyth/MMM-Remote-Control)
 ```bash
 curl --location 'https://myimmich.server:443/api/notification/IMMICHSLIDESHOW_SET_ACTIVE_CONFIG' \
---header 'Authorization: Bearer <MyAPiKey>' \
+--header 'Authorization: apiKey <MyAPiKey>' \
 --header 'Accept: application/json' \
 --header 'Content-Type: application/json' \
 --data '{
@@ -187,7 +177,7 @@ The following properties can be configured:
 			<td><code>validImageFileExtensions</code></td>
 			<td>String value, a list of image file extensions, separated by commas, that should be included. Files found without one of the extensions will be ignored.  Note that you can include HEIC as a valid extension but beware that the conversion time may be noticeable based on your server and its horsepower.<br>
 				<br><b>Example:</b> <code>'png,jpg'</code>
-				<br><b>Default value:</b> <code>'bmp,jpg,jpeg,gif,png'</code>
+				<br><b>Default value:</b> <code>'bmp,jpg,jpeg,gif,png,heic'</code>
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
@@ -219,7 +209,7 @@ The following properties can be configured:
 			<td><code>transitionSpeed</code></td>
 			<td>Transition speed from one image to the other, transitionImages must be true. Must be a valid css transition duration.<br>
 				<br><b>Example:</b> <code>'2s'</code>
-				<br><b>Default value:</b> <code>'1s'</code>
+				<br><b>Default value:</b> <code>'2s'</code>
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
@@ -432,7 +422,7 @@ The following properties can be configured:
 			<td>The number of images to return when in <i>search</i>, <i>random</i>, or <i>anniversary</i> mode.  Although, this can also be specified as a <i>size</i> parameter in <i>query</i>, the value specified here overwrites that value.  This value must be between 1 and 1000.<br>
 				<br><b>Example:</b> <code>150</code>
 				<br><b>Default value:</b> <code>100</code>
-				<br>This value is <b>REQUIRED</b> if <i>mode</i> is set to <i>search</i>, <i>random</i>, or <i>anniversary</i>.
+				<br>This value is <b>OPTIONAL</b> for <i>search</i>, <i>random</i>, or <i>anniversary</i>. If omitted, the default value is used.
 			</td>
 		</tr>
 		<tr>
@@ -551,15 +541,13 @@ modules: [
         activeImmichConfigIndex: 0,
         showImageInfo: true,
         showProgressBar: true,
-        sortImagesBy: 'taken',
         sortImagesDescending: true,
         validImageFileExtensions: 'jpg,jpeg,png,gif,bmp,heic',
-        slideshowSpeed: 30000,
         backgroundPosition: 'top',
         backgroundAnimationEnabled:true,
         backgroundSize: 'cover',
         backgroundColor: 'rgba(0,0,0,.5)',
-        bacldropFilter: 'blur(10px)',
+        backdropFilter: 'blur(10px)',
         animations: [
           'slide'
         ]
