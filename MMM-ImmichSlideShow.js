@@ -503,17 +503,25 @@ Module.register('MMM-ImmichSlideShow', {
     const imageInfo = imageinfo;
     const image = new Image();
     image.onload = () => {
-      // check if there are more than 2 elements and remove the first one
-      if (this.imagesDiv.childNodes.length > 1) {
-        this.imagesDiv.removeChild(this.imagesDiv.childNodes[0]);
-      }
-      if (this.imagesDiv.childNodes.length > 0 && this.data.position.indexOf('fullscreen') === -1) {
-        this.imagesDiv.removeChild(this.imagesDiv.childNodes[0]);
-        //this.imagesDiv.childNodes[0].style.opacity = '0';
+      if (!this.config.transitionImages) {
+        // Without transitions we should only ever show the active image.
+        // Keeping the previous layer causes it to bleed through around
+        // narrower "contain" images.
+        this.imagesDiv.replaceChildren();
+      } else {
+        // check if there are more than 2 elements and remove the first one
+        if (this.imagesDiv.childNodes.length > 1) {
+          this.imagesDiv.removeChild(this.imagesDiv.childNodes[0]);
+        }
+        if (this.imagesDiv.childNodes.length > 0 && this.data.position.indexOf('fullscreen') === -1) {
+          this.imagesDiv.removeChild(this.imagesDiv.childNodes[0]);
+          //this.imagesDiv.childNodes[0].style.opacity = '0';
+        }
       }
 
       const transitionDiv = document.createElement('div');
       transitionDiv.className = 'transition';
+      transitionDiv.style.backgroundColor = this.config.backgroundColor || '#000';
       // transitionDiv.innerHTML = "&nbsp;<span style=\"background-color: #f00, color: #ff0\">Hello there</span>&nbsp;";
       // Create a background color around the image is not see through
       if (this.config.showBlurredImageForBlackBars) {
