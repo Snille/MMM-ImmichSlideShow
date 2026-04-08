@@ -356,6 +356,86 @@ module.exports = NodeHelper.create({
     this.displayImage();
   },
 
+  normalizeIndex: function(index, length) {
+    if (!length) {
+      return 0;
+    }
+    return ((index % length) + length) % length;
+  },
+
+  jumpRelative: function(offset) {
+    if (!this.imageList.length) {
+      Log.debug(LOG_PREFIX + 'jumpRelative ignored, image list is empty');
+      return;
+    }
+
+    this.index = this.normalizeIndex(this.index + offset, this.imageList.length);
+    Log.debug(LOG_PREFIX + `jumpRelative moved to index ${this.index + 1}/${this.imageList.length}`);
+    this.displayImage();
+  },
+
+  getImageDateValue: function(image) {
+    const dateValue = image?.exifInfo?.dateTimeOriginal || image?.fileCreatedAt || image?.fileModifiedAt || image?.createdAt;
+    const timestamp = Date.parse(dateValue);
+    return Number.isNaN(timestamp) ? null : timestamp;
+  },
+
+  parseRequestedDate: function(payload) {
+    const dateString = typeof payload === 'string'
+      ? payload
+      : payload?.date || payload?.data || payload?.value;
+
+    if (!dateString) {
+      return null;
+    }
+
+    const normalized = `${dateString}`.trim();
+    if (/^\d{8}$/.test(normalized)) {
+      return Date.parse(`${normalized.slice(0, 4)}-${normalized.slice(4, 6)}-${normalized.slice(6, 8)}T00:00:00`);
+    }
+
+    const parsed = Date.parse(normalized);
+    return Number.isNaN(parsed) ? null : parsed;
+  },
+
+  gotoNearestDate: function(payload) {
+    if (!this.imageList.length) {
+      Log.debug(LOG_PREFIX + 'gotoNearestDate ignored, image list is empty');
+      return;
+    }
+
+    const targetDate = this.parseRequestedDate(payload);
+    if (targetDate === null) {
+      Log.warn(LOG_PREFIX + 'gotoNearestDate received invalid date payload', payload);
+      return;
+    }
+
+    let nearestIndex = -1;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    this.imageList.forEach((image, idx) => {
+      const imageDate = this.getImageDateValue(image);
+      if (imageDate === null) {
+        return;
+      }
+
+      const distance = Math.abs(imageDate - targetDate);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = idx;
+      }
+    });
+
+    if (nearestIndex === -1) {
+      Log.warn(LOG_PREFIX + 'gotoNearestDate could not find any image with a valid date');
+      return;
+    }
+
+    this.index = nearestIndex;
+    Log.debug(LOG_PREFIX + `gotoNearestDate moved to index ${this.index + 1}/${this.imageList.length}`);
+    this.displayImage();
+  },
+
   // resizeImage: function (input, callback) {
   //   Jimp.read(input)
   //     .then((image) => {
@@ -429,6 +509,10 @@ module.exports = NodeHelper.create({
       this.getNextImage();
     } else if (notification === 'IMMICHSLIDESHOW_PREV_IMAGE') {
       this.getPrevImage();
+    } else if (notification === 'IMMICHSLIDESHOW_JUMP') {
+      this.jumpRelative(Number(payload?.offset) || 0);
+    } else if (notification === 'IMMICHSLIDESHOW_GOTO_DATE') {
+      this.gotoNearestDate(payload);
     } else if (notification === 'IMMICHSLIDESHOW_RESUME') {
       // Resume
       this.resume();

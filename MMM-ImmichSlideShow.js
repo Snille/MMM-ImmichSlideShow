@@ -357,10 +357,20 @@ Module.register('MMM-ImmichSlideShow', {
           notification: "IMMICHSLIDESHOW_NEXT",
           prettyName: 'Show next picture'
         },
+        showNext10: {
+          method: 'GET',
+          notification: "IMMICHSLIDESHOW_NEXT10",
+          prettyName: 'Show picture 10 steps ahead'
+        },
         showPrevisous: {
           method: 'GET',
           notification: "IMMICHSLIDESHOW_PREVIOUS",
           prettyName: 'Show previous picture'
+        },
+        showPrevious10: {
+          method: 'GET',
+          notification: "IMMICHSLIDESHOW_PREVIOUS10",
+          prettyName: 'Show picture 10 steps back'
         },
         pause: {
           method: 'GET',
@@ -405,11 +415,23 @@ Module.register('MMM-ImmichSlideShow', {
       this.updateImage();
       // Restart timer only if timer was already running
       this.resume();
+    } else if (notification === 'IMMICHSLIDESHOW_NEXT10') {
+      this.suspend();
+      this.sendSocketNotification('IMMICHSLIDESHOW_JUMP', { offset: 10 });
+      this.resume();
     } else if (notification === 'IMMICHSLIDESHOW_PREVIOUS') {
       this.suspend();
       // Change to previous image
       this.updateImage(/* skipToPrevious= */ true);
       // Restart timer only if timer was already running
+      this.resume();
+    } else if (notification === 'IMMICHSLIDESHOW_PREVIOUS10') {
+      this.suspend();
+      this.sendSocketNotification('IMMICHSLIDESHOW_JUMP', { offset: -10 });
+      this.resume();
+    } else if (notification === 'IMMICHSLIDESHOW_GOTO_DATE') {
+      this.suspend();
+      this.sendSocketNotification('IMMICHSLIDESHOW_GOTO_DATE', payload);
       this.resume();
     } else if (notification === 'IMMICHSLIDESHOW_RESUME') {
      this.resume();
@@ -418,6 +440,13 @@ Module.register('MMM-ImmichSlideShow', {
     } else if (notification === 'IMMICHSLIDESHOW_SET_ACTIVE_CONFIG') {
       // Update config in backend
       this.setActiveConfig(payload.data);
+    } else if (/^IMMICHSLIDESHOW_(\d{8})$/.test(notification)) {
+      const matches = notification.match(/^IMMICHSLIDESHOW_(\d{8})$/);
+      this.suspend();
+      this.sendSocketNotification('IMMICHSLIDESHOW_GOTO_DATE', {
+        date: matches[1]
+      });
+      this.resume();
     } else if (notification === 'ALL_MODULES_STARTED') {
       if (this.showLegacyNotification) {
         this.sendNotification('SHOW_ALERT', {

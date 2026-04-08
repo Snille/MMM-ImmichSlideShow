@@ -94,8 +94,28 @@ The following notifications can be used:
 			</td>
 		</tr>
 		<tr>
+			<td><code>IMMICHSLIDESHOW_NEXT10</code></td>
+			<td>Jump forward 10 images, restart the timer for image changes only if already running<br>
+			</td>
+		</tr>
+		<tr>
 			<td><code>IMMICHSLIDESHOW_PREVIOUS</code></td>
 			<td>Change to the previous image, restart the timer for image changes only if already running<br>
+			</td>
+		</tr>
+		<tr>
+			<td><code>IMMICHSLIDESHOW_PREVIOUS10</code></td>
+			<td>Jump backward 10 images, restart the timer for image changes only if already running<br>
+			</td>
+		</tr>
+		<tr>
+			<td><code>IMMICHSLIDESHOW_GOTO_DATE</code></td>
+			<td>Jump to the image nearest a requested date. Send a payload with <code>date</code> as <code>YYYYMMDD</code>, <code>YYYY-MM-DD</code> or any value JavaScript can parse as a date.<br>
+			</td>
+		</tr>
+		<tr>
+			<td><code>IMMICHSLIDESHOW_YYYYMMDD</code></td>
+			<td>Shortcut notification format for jumping to the image nearest a date, for example <code>IMMICHSLIDESHOW_20250205</code>.<br>
 			</td>
 		</tr>
 		<tr>
