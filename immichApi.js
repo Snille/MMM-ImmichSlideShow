@@ -199,7 +199,7 @@ const immichApi = {
         try {
             const response = await this.http.get(this.apiUrls[this.apiLevel]['albumInfo'].replace('{id}',albumId), {responseType: 'json'});
             if (response.status === 200) {
-                imageList = [...response.data.assets];
+                imageList = Array.isArray(response.data.assets) ? [...response.data.assets] : [];
                 if (imageList.length === 0 && response.data.assetCount > 0 && this.apiUrls[this.apiLevel]['metadataSearch']) {
                     Log.debug(
                         LOG_PREFIX +
