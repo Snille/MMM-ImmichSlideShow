@@ -184,6 +184,10 @@ Module.register('MMM-ImmichSlideShow', {
         }
       ]
     } else {
+      // Make sure the defaultConfig is overridden by the main config
+      this.defaultConfig = {...this.defaultConfig,...this.config};
+      // Remove the immichConfigs from default config.
+      delete this.defaultConfig.immichConfigs
       this.config.immichConfigs[0] = {...this.defaultConfig,...this.config.immichConfigs[0]};
     }
 
